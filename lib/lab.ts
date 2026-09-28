@@ -3,6 +3,11 @@ export type NoulQuestion = { type: "noul"; instructions: string; criteria: { tru
 export type ScoreQuestion = { type: "score"; instructions: string; criteria: string[] };
 export type Questions = { equipe: ChoiceQuestion; reembolso: NoulQuestion; urgencia: ScoreQuestion };
 export type LabInput = { state: string; questions: Questions };
+const JEV_INPUT_USD_PER_MILLION = 0.042;
+
+function nonnegativeNumber(value: unknown): number | null {
+  return typeof value === "number" && Number.isFinite(value) && value >= 0 ? value : null;
+}
 
 export class LabError extends Error {
   constructor(message: string, public status = 400) { super(message); }
@@ -95,7 +100,14 @@ export async function callJev(input: LabInput, key: string, kind?: "choice" | "n
     !answers[name] || answers[name].type !== question.type)) {
     throw new LabError("JEV retornou respostas incompletas.", 502);
   }
-  return { model: body.model ?? "jev-latest", answers, usage: body.usage ?? null, elapsed_ms: Math.round(performance.now() - started) };
+  const usage = body.usage && typeof body.usage === "object" ? body.usage as Record<string, unknown> : null;
+  const inputTokens = nonnegativeNumber(usage?.input_tokens);
+  return {
+    model: body.model ?? "jev-latest", answers, usage,
+    cost_usd: inputTokens === null ? null : inputTokens * JEV_INPUT_USD_PER_MILLION / 1_000_000,
+    cost_kind: "estimate" as const,
+    elapsed_ms: Math.round(performance.now() - started),
+  };
 }
 
 export async function callLuna(input: LabInput, key: string) {
@@ -118,6 +130,7 @@ export async function callLuna(input: LabInput, key: string) {
     ],
     response_format: { type: "json_schema", json_schema: { name: "triagem_chamado", strict: true, schema } },
     provider: { require_parameters: true },
+    usage: { include: true },
     max_tokens: 1200,
   };
   const started = performance.now();
@@ -130,9 +143,13 @@ export async function callLuna(input: LabInput, key: string) {
       !Number.isInteger(answer.score) ||
       (answer.score as number) < 0 || (answer.score as number) >= input.questions.urgencia.criteria.length ||
       typeof answer.reason !== "string") throw new Error("Formato inválido");
-    return { model: body.model ?? "openai/gpt-6-luna", answer, usage: body.usage ?? null, elapsed_ms: Math.round(performance.now() - started) };
+    const usage = body.usage && typeof body.usage === "object" ? body.usage as Record<string, unknown> : null;
+    return {
+      model: body.model ?? "openai/gpt-6-luna", answer, usage,
+      cost_usd: nonnegativeNumber(usage?.cost), cost_kind: "reported" as const,
+      elapsed_ms: Math.round(performance.now() - started),
+    };
   } catch {
     throw new LabError("GPT-6 Luna não seguiu o formato esperado. Rode a comparação novamente.", 502);
   }
 }
-
