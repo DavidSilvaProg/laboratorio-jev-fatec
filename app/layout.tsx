@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Laboratório JEV | Tópicos Especiais",
-  description: "Aula interativa sobre Choice, Noul e Score com comparação ao GPT-6 Luna.",
+  description: "Aula interativa sobre Choice, Noul e Score com comparação ao Claude Opus 5.5.",
   other: {
     "codex-preview": "development",
   },

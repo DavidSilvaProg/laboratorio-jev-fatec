@@ -1,5 +1,5 @@
 import { getChatGPTUser } from "@/app/chatgpt-auth";
-import { callJev, callLuna, LabError, validateInput } from "@/lib/lab";
+import { callJev, callOpus, LabError, validateInput } from "@/lib/lab";
 import { loadKey } from "@/lib/secure-keys";
 
 export const runtime = "edge";
@@ -27,14 +27,13 @@ export async function POST(request: Request) {
         return { ok: false, error: error instanceof LabError ? error.message : "Consulta indisponível." };
       }
     };
-    const [jev, luna] = await Promise.all([
+    const [jev, opus] = await Promise.all([
       run(() => callJev(input, jevKey)),
-      run(() => callLuna(input, openrouterKey)),
+      run(() => callOpus(input, openrouterKey)),
     ]);
-    return response({ jev, luna });
+    return response({ jev, opus });
   } catch (error) {
     if (error instanceof LabError) return response({ error: error.message }, error.status);
     return response({ error: "Não foi possível iniciar a comparação." }, 503);
   }
 }
-

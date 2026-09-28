@@ -110,7 +110,7 @@ export async function callJev(input: LabInput, key: string, kind?: "choice" | "n
   };
 }
 
-export async function callLuna(input: LabInput, key: string) {
+export async function callOpus(input: LabInput, key: string) {
   const schema = {
     type: "object",
     properties: {
@@ -123,7 +123,7 @@ export async function callLuna(input: LabInput, key: string) {
     additionalProperties: false,
   };
   const payload = {
-    model: "openai/gpt-6-luna",
+    model: "anthropic/claude-opus-5.5",
     messages: [
       { role: "system", content: "Você classifica chamados. Use somente o estado e as rubricas recebidas. Responda exclusivamente com o JSON solicitado, em português, sem inventar fatos." },
       { role: "user", content: JSON.stringify({ estado: input.state, perguntas: input.questions, formato_da_resposta: schema }) },
@@ -145,11 +145,11 @@ export async function callLuna(input: LabInput, key: string) {
       typeof answer.reason !== "string") throw new Error("Formato inválido");
     const usage = body.usage && typeof body.usage === "object" ? body.usage as Record<string, unknown> : null;
     return {
-      model: body.model ?? "openai/gpt-6-luna", answer, usage,
+      model: body.model ?? "anthropic/claude-opus-5.5", answer, usage,
       cost_usd: nonnegativeNumber(usage?.cost), cost_kind: "reported" as const,
       elapsed_ms: Math.round(performance.now() - started),
     };
   } catch {
-    throw new LabError("GPT-6 Luna não seguiu o formato esperado. Rode a comparação novamente.", 502);
+    throw new LabError("Claude Opus 5.5 não seguiu o formato esperado. Rode a comparação novamente.", 502);
   }
 }
