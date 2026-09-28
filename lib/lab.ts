@@ -1,3 +1,5 @@
+import { blockedMessage, findBlockedCategory } from "./content-guard";
+
 export type ChoiceQuestion = { type: "choice"; instructions: string; criteria: Record<string, string> };
 export type NoulQuestion = { type: "noul"; instructions: string; criteria: { true: string; false: string } };
 export type ScoreQuestion = { type: "score"; instructions: string; criteria: string[] };
@@ -11,6 +13,20 @@ function nonnegativeNumber(value: unknown): number | null {
 
 export class LabError extends Error {
   constructor(message: string, public status = 400) { super(message); }
+}
+
+export function assertSafeInput(input: LabInput): void {
+  const category = findBlockedCategory([
+    input.state,
+    input.questions.equipe.instructions,
+    ...Object.values(input.questions.equipe.criteria),
+    input.questions.reembolso.instructions,
+    input.questions.reembolso.criteria.true,
+    input.questions.reembolso.criteria.false,
+    input.questions.urgencia.instructions,
+    ...input.questions.urgencia.criteria,
+  ]);
+  if (category) throw new LabError(blockedMessage(category), 422);
 }
 
 function stringValue(value: unknown, name: string, limit: number): string {

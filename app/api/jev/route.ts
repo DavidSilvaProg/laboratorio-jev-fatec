@@ -1,5 +1,5 @@
 import { getChatGPTUser } from "@/app/chatgpt-auth";
-import { callJev, LabError, validateInput } from "@/lib/lab";
+import { assertSafeInput, callJev, LabError, validateInput } from "@/lib/lab";
 import { loadKey } from "@/lib/secure-keys";
 
 export const runtime = "edge";
@@ -19,6 +19,7 @@ export async function POST(request: Request) {
     const kind = raw?.kind;
     if (kind !== "choice" && kind !== "noul" && kind !== "score") throw new LabError("Escolha Choice, Noul ou Score.");
     const input = validateInput(raw, kind);
+    assertSafeInput(input);
     const key = await loadKey(user.userId, "jev");
     if (!key) throw new LabError("Salve sua chave JEV antes de executar.");
     return response(await callJev(input, key, kind));

@@ -1,5 +1,5 @@
 import { getChatGPTUser } from "@/app/chatgpt-auth";
-import { callJev, callOpus, LabError, validateInput } from "@/lib/lab";
+import { assertSafeInput, callJev, callOpus, LabError, validateInput } from "@/lib/lab";
 import { loadKey } from "@/lib/secure-keys";
 
 export const runtime = "edge";
@@ -16,6 +16,7 @@ export async function POST(request: Request) {
   }
   try {
     const input = validateInput(await request.json());
+    assertSafeInput(input);
     const [jevKey, openrouterKey] = await Promise.all([
       loadKey(user.userId, "jev"),
       loadKey(user.userId, "openrouter"),
